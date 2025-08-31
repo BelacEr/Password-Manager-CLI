@@ -19,10 +19,20 @@ def load_or_generate_key():
         with open("secret.key", "wb") as key_file:
             key_file.write(key)
 
-        print("""
-        \nKey created!
-        Remember to keep your key safe. If you lose it, your passwords cannot be decrypted.
-        If you want to know more about how the program works, visit https://github.com/BelacEr/Password-Manager-CLI""")
+        print("\nKey created! Keep it safe.")
+        return key
+
+
+def encrypt_password(password: str, key: bytes) -> bytes:
+    """Encrypts a password using Fernet."""
+    f = Fernet(key)
+    return f.encrypt(password.encode())
+
+
+def decrypt_password(encrypted_password: bytes, key: bytes) -> str:
+    """Decrypt a password using Fernet."""
+    f = Fernet(key)
+    return f.decrypt(encrypted_password).decode()
 
 
 def init_db():
@@ -36,32 +46,33 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         service TEXT NOT NULL,
         username TEXT NOT NULL,
-        password TEXT NOT NULL
+        encrypted_password BLOB NOT NULL
     )
 """)
     connect.commit()
     connect.close()
 
 
-def add_password(service, username, password):
+def add_password(service, username, password, key):
     """
-    Add password function.
+    Add encryptd password function.
     """
+    encrypted_pw = encrypt_password(password, key)
+
     connect = sqlite3.connect("passwords.db")
     cursor = connect.cursor()
     cursor.execute(
-    "INSERT INTO passwords (service, username, password) VALUES (?, ?, ?)",
-    (service, username, password)
-    )
+    "INSERT INTO passwords (service, username, encrypted_password) VALUES (?, ?, ?)",
+    (service, username, encrypted_pw))
     connect.commit()
     connect.close()
     
-    print(f"\nPassword for {service} added!")
+    print(f"\nPassword for {service} added securely!")
 
 
-def show_passwords():
+def show_passwords(key):
     """
-    Display all passwords saved in the database.
+    Display all passwords (decrypted) saved in the database.
     """
     try:
         connect = sqlite3.connect("passwords.db")
@@ -79,14 +90,17 @@ def show_passwords():
         print("ID | Service      | Username       | Password")
         print("="*50)
         for row in rows:
-            print(f"{row[0]:<2} | {row[1]:<12} | {row[2]:<15} | {row[3]}")
+            decrypted_pw = decrypt_password(row[3], key)
+            print(f"{row[0]:<2} | {row[1]:<12} | {row[2]:<15} | {decrypted_pw}")
         print("="*50)
 
     except sqlite3.Error as e:
         print("\nDatabase error: {e}")
+    except InvalidToken:
+        print("\nDecryption failed - invalid key or corrupted data")
 
 
-def find_password_by_service(service_name):
+def find_password_by_service(service_name, key):
     """
     Function to find the password for the specific service.
     """
@@ -96,7 +110,12 @@ def find_password_by_service(service_name):
     row = cursor.fetchone()
 
     if row:
-        print(f"\nService: {row[1]}\nUsername: {row[2]}\nPassword: {row[3]}")
+        try:
+            decrypted_pw = decrypt_password(row[3], key)
+            # row[3] was changed to decrypted_pw to display the password.
+            print(f"\nService: {row[1]}\nUsername: {row[2]}\nPassword: {decrypted_pw}")
+        except InvalidToken:
+            print("\nDecryption failed - invalid key or corrupted data.")
     else:
         print(f"There's no password for {service_name}")
 
@@ -130,6 +149,7 @@ def enter_number(prompt):
 
 
 def main():
+    key = load_or_generate_key()    # Create the key.
     init_db()
     while True:
         show_menu()
@@ -142,17 +162,16 @@ def main():
                 service = input("\nService: ").strip()
                 username = input("Username: ").strip()
                 password = getpass.getpass("Password: ").strip()    # getpass so that the password is not displayed
+                add_password(service, username, password, key)
             except KeyboardInterrupt:
                 print(thank_you)
                 sys.exit()
             except EOFError:
                 print(thank_you)
-                sys.exit()
-
-            add_password(service, username, password)
+                sys.exit()      
 
         elif choice == 2:
-            show_passwords()
+            show_passwords(key)
 
         elif choice == 3:
             try:
@@ -165,7 +184,7 @@ def main():
                 print(thank_you)
                 sys.exit()
 
-            find_password_by_service(service)
+            find_password_by_service(service, key)
 
         elif choice == 4:
             print(thank_you)
