@@ -5,7 +5,7 @@ from cryptography.fernet import Fernet, InvalidToken
     
 
 valid_number = "\nMake sure to enter a valid number."
-thank_you = "\nThank you for using Password-Manager-CLI made by BelacEr"
+thank_you = "\nThank you for using Password-Manager-CLI made by BelacEr."
 
 
 def load_or_generate_key():
@@ -96,7 +96,7 @@ def show_passwords(key):
         print("="*50)
 
     except sqlite3.Error as e:
-        print("\nDatabase error: {e}")
+        print(f"\nDatabase error: {e}")
     except InvalidToken:
         print("\nDecryption failed - invalid key or corrupted data")
 
