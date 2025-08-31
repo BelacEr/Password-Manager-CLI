@@ -3,6 +3,7 @@ import sys
 import getpass
 from cryptography.fernet import Fernet, InvalidToken
     
+
 valid_number = "\nMake sure to enter a valid number."
 thank_you = "\nThank you for using Password-Manager-CLI made by BelacEr"
 
@@ -102,7 +103,7 @@ def show_passwords(key):
 
 def find_password_by_service(service_name, key):
     """
-    Function to find the password for the specific service.
+    Function to find the password (decrypted) for the specific service.
     """
     connect = sqlite3.connect("passwords.db")
     cursor = connect.cursor()
@@ -117,7 +118,7 @@ def find_password_by_service(service_name, key):
         except InvalidToken:
             print("\nDecryption failed - invalid key or corrupted data.")
     else:
-        print(f"There's no password for {service_name}")
+        print(f"There's no password for {service_name}.")
 
 
 def show_menu():
@@ -137,14 +138,8 @@ def enter_number(prompt):
     while True:
         try:
             return int(input(prompt))
-        except ValueError:
+        except (ValueError, KeyboardInterrupt, EOFError):
             print(valid_number)
-            sys.exit()
-        except KeyboardInterrupt:
-            print(thank_you)
-            sys.exit()
-        except EOFError:
-            print(thank_you)
             sys.exit()
 
 
@@ -155,7 +150,7 @@ def main():
         show_menu()
         choice = enter_number("Enter your choice: ")
 
-        # Temporal menu map
+        # Menu map
         if choice == 1:
             try:
                 # Ask for the service, username and input with try-except for built-in exceptions.
@@ -163,12 +158,9 @@ def main():
                 username = input("Username: ").strip()
                 password = getpass.getpass("Password: ").strip()    # getpass so that the password is not displayed
                 add_password(service, username, password, key)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 print(thank_you)
                 sys.exit()
-            except EOFError:
-                print(thank_you)
-                sys.exit()      
 
         elif choice == 2:
             show_passwords(key)
@@ -177,10 +169,7 @@ def main():
             try:
                 # Ask for the service to search with try-except for built-in exceptions.
                 service = input("Name of the service you want the password for: ").strip()
-            except KeyboardInterrupt:
-                print(thank_you)
-                sys.exit()
-            except EOFError:
+            except (KeyboardInterrupt, EOFError):
                 print(thank_you)
                 sys.exit()
 
