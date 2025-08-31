@@ -154,8 +154,3 @@ def main():
 
         else:
             print(valid_number)
-
-
-# Run the program
-if __name__ == '__main__':
-    main()
