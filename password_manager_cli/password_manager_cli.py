@@ -138,8 +138,10 @@ def enter_number(prompt):
     while True:
         try:
             return int(input(prompt))
-        except (ValueError, KeyboardInterrupt, EOFError):
+        except ValueError:
             print(valid_number)
+        except (KeyboardInterrupt, EOFError):
+            print(thank_you)
             sys.exit()
 
 
