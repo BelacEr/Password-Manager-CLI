@@ -1,9 +1,28 @@
 import sqlite3
 import sys
 import getpass
-
+from cryptography.fernet import Fernet, InvalidToken
+    
 valid_number = "\nMake sure to enter a valid number."
 thank_you = "\nThank you for using Password-Manager-CLI made by BelacEr"
+
+
+def load_or_generate_key():
+    """
+    Try loading the previously generated key. If the key doesn't exist,
+    it will be created and saved to a file.
+    """
+    try:
+        return open("secret.key", "rb").read()
+    except FileNotFoundError:
+        key = Fernet.generate_key()
+        with open("secret.key", "wb") as key_file:
+            key_file.write(key)
+
+        print("""
+        \nKey created!
+        Remember to keep your key safe. If you lose it, your passwords cannot be decrypted.
+        If you want to know more about how the program works, visit https://github.com/BelacEr/Password-Manager-CLI""")
 
 
 def init_db():
