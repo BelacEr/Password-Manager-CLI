@@ -1,4 +1,4 @@
-from password_manager_cli import main, load_or_generate_key
+from password_manager_cli import main
 
 # Run the program.
 if __name__ == '__main__':
